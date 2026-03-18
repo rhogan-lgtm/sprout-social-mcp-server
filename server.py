@@ -148,12 +148,17 @@ async def get_post_analytics(
 ) -> dict:
     """Get per-post performance metrics over a date range.
 
+    Returns individual post data (text, link, author) with lifetime metrics.
+    Automatically fetches all pages (50 posts/page) and returns combined results.
+
     Args:
         profile_ids: List of profile IDs to get post analytics for.
         start_date: Start date in YYYY-MM-DD format.
         end_date: End date in YYYY-MM-DD format.
-        metrics: List of metric names (e.g. ["lifetime.impressions", "lifetime.engagements"]).
-            Defaults to impressions and engagements if omitted.
+        metrics: List of lifetime-prefixed metric names. Defaults to:
+            lifetime.impressions, lifetime.engagements, lifetime.post_link_clicks,
+            lifetime.post_shares_count, lifetime.likes, lifetime.comments_count.
+            Not all metrics are available on all networks (e.g. YouTube may lack impressions).
     """
     if not profile_ids:
         return {"error": "profile_ids must not be empty", "status_code": 400}
