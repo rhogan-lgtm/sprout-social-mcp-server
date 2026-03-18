@@ -75,6 +75,9 @@ class SproutClient:
         client = self._get_client()
         url = f"{self.base_url}{path}"
 
+        last_status = 0
+        last_body = ""
+
         for attempt in range(MAX_RETRIES):
             await self._throttle()
 
@@ -87,6 +90,9 @@ class SproutClient:
 
             if response.status_code == 204:
                 return {"success": True}
+
+            last_status = response.status_code
+            last_body = response.text
 
             if response.status_code == 429:
                 retry_after = response.headers.get("Retry-After")
@@ -106,8 +112,10 @@ class SproutClient:
             }
 
         return {
-            "error": f"Request failed after {MAX_RETRIES} retries",
-            "status_code": 0,
+            "error": f"Sprout API returned {last_status} after {MAX_RETRIES} retries",
+            "status_code": last_status,
+            "sprout_error": last_body,
+            "attempts": MAX_RETRIES,
         }
 
     # --- Tier 1: Core Workflow ---
@@ -204,14 +212,49 @@ class SproutClient:
         metrics: Optional[list[str]] = None,
     ) -> dict:
         if metrics is None:
-            metrics = ["lifetime.impressions", "lifetime.engagements"]
+            metrics = [
+                "lifetime.impressions",
+                "lifetime.engagements",
+                "lifetime.post_link_clicks",
+                "lifetime.post_shares_count",
+                "lifetime.likes",
+                "lifetime.comments_count",
+            ]
         body = {
             "filters": [
                 f"customer_profile_id.eq({','.join(profile_ids)})",
-                f"created_time.in({start_date}, {end_date})",
+                f"created_time.in({start_date}T00:00:00..{end_date}T23:59:59)",
+            ],
+            "fields": [
+                "created_time",
+                "perma_link",
+                "text",
+                "internal.sent_by.email",
             ],
             "metrics": metrics,
+            "page": 1,
         }
-        return await self._request(
-            "POST", f"/v1/{self.customer_id}/analytics/posts", json=body
-        )
+
+        # Auto-paginate: the posts endpoint returns max 50 results per page.
+        all_data: list[dict] = []
+        page = 1
+        while True:
+            body["page"] = page
+            result = await self._request(
+                "POST", f"/v1/{self.customer_id}/analytics/posts", json=body
+            )
+
+            if "error" in result:
+                return result
+
+            all_data.extend(result.get("data", []))
+
+            paging = result.get("paging", {})
+            if page >= paging.get("total_pages", 1):
+                break
+            page += 1
+
+        return {
+            "data": all_data,
+            "paging": {"total_pages": page, "total_results": len(all_data)},
+        }
