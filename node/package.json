@@ -1,0 +1,36 @@
+{
+  "name": "sprout-social-mcp",
+  "version": "0.1.0",
+  "description": "MCP server for managing Sprout Social via Claude",
+  "bin": {
+    "sprout-social-mcp": "dist/index.js"
+  },
+  "files": [
+    "dist/**/*"
+  ],
+  "scripts": {
+    "build": "tsc",
+    "prepare": "tsc"
+  },
+  "dependencies": {
+    "@modelcontextprotocol/sdk": "^1.0.0"
+  },
+  "devDependencies": {
+    "typescript": "^5.0.0",
+    "@types/node": "^20.0.0"
+  },
+  "engines": {
+    "node": ">=18"
+  },
+  "license": "MIT",
+  "keywords": [
+    "mcp",
+    "sprout-social",
+    "social-media",
+    "claude"
+  ],
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/kodowjam/sprout-social-mcp-server.git"
+  }
+}

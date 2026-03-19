@@ -14,3 +14,17 @@ dependencies = [
     "httpx>=0.28.0",
     "python-dotenv>=1.0.0",
 ]
+
+[project.scripts]
+sprout-social-mcp = "sprout_social_mcp.__main__:main"
+
+[tool.hatch.build.targets.wheel]
+packages = ["sprout_social_mcp"]
+
+[tool.hatch.build.targets.sdist]
+exclude = [
+  "node/",
+  ".claude/",
+  "__pycache__/",
+  "*.pyc",
+]

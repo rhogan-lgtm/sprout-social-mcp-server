@@ -3,3 +3,8 @@ __pycache__/
 .venv/
 *.pyc
 .DS_Store
+
+# Python build artifacts
+dist/
+build/
+*.egg-info

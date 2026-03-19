@@ -21,13 +21,77 @@ An MCP (Model Context Protocol) server that connects Claude to the Sprout Social
 
 ## Prerequisites
 
-- Python 3.10+
 - A Sprout Social API token ([developer docs](https://developers.sproutsocial.com/))
 - Claude Desktop or Claude Code
+- For npx: Node.js 18+ (recommended for most users)
+- For uvx: Python 3.10+
+- For clone method: Python 3.10+ and git
 
-## Setup
+## Installation
 
-### 1. Clone and install
+Choose one of the following installation methods:
+
+### Option 1: npx (Recommended)
+
+No installation required! Just add this to your Claude Desktop config (`~/Library/Application Support/Claude/claude_desktop_config.json` on macOS):
+
+```json
+{
+  "mcpServers": {
+    "sprout-social": {
+      "command": "npx",
+      "args": ["-y", "sprout-social-mcp"],
+      "env": {
+        "SPROUT_API_TOKEN": "your_sprout_social_api_token_here",
+        "SPROUT_CUSTOMER_ID": "your_customer_id_here"
+      }
+    }
+  }
+}
+```
+
+For Claude Code:
+
+```bash
+claude mcp add sprout-social -- npx -y sprout-social-mcp
+```
+
+Then set the environment variables in your shell or MCP config.
+
+> Don't know your customer ID? You can use the `get_customer_id` tool after connecting to find it.
+
+### Option 2: uvx / PyPI
+
+No installation required! Add this to your Claude Desktop config:
+
+```json
+{
+  "mcpServers": {
+    "sprout-social": {
+      "command": "uvx",
+      "args": ["sprout-social-mcp"],
+      "env": {
+        "SPROUT_API_TOKEN": "your_sprout_social_api_token_here",
+        "SPROUT_CUSTOMER_ID": "your_customer_id_here"
+      }
+    }
+  }
+}
+```
+
+For Claude Code:
+
+```bash
+claude mcp add sprout-social -- uvx sprout-social-mcp
+```
+
+Then set the environment variables in your shell or MCP config.
+
+### Option 3: Clone & Install
+
+For development or local customization:
+
+1. Clone and install:
 
 ```bash
 git clone https://github.com/kodowjam/sprout-social-mcp-server.git
@@ -35,7 +99,7 @@ cd sprout-social-mcp-server
 pip install .
 ```
 
-### 2. Configure environment
+2. Configure environment:
 
 ```bash
 cp .env.example .env
@@ -48,11 +112,7 @@ SPROUT_API_TOKEN=your_sprout_social_api_token_here
 SPROUT_CUSTOMER_ID=your_customer_id_here
 ```
 
-> Don't know your customer ID? You can use the `get_customer_id` tool after connecting to find it.
-
-### 3. Connect to Claude Desktop
-
-Add to your Claude Desktop config (`~/Library/Application Support/Claude/claude_desktop_config.json` on macOS):
+3. Connect to Claude Desktop:
 
 ```json
 {
@@ -66,13 +126,13 @@ Add to your Claude Desktop config (`~/Library/Application Support/Claude/claude_
 }
 ```
 
-Restart Claude Desktop to load the server.
-
-### 4. Connect to Claude Code
+For Claude Code:
 
 ```bash
 claude mcp add sprout-social -- python /absolute/path/to/sprout-social-mcp-server/server.py
 ```
+
+Restart Claude Desktop to load the server.
 
 ## Tools Reference
 
