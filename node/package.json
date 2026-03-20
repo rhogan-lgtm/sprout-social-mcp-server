@@ -1,6 +1,6 @@
 {
   "name": "@kodowjam/sprout-social-mcp",
-  "version": "0.1.0",
+  "version": "0.1.1",
   "description": "MCP server for managing Sprout Social via Claude",
   "bin": {
     "sprout-social-mcp": "dist/index.js"
