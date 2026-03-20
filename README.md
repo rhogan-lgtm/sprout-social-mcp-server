@@ -40,7 +40,7 @@ No installation required! Just add this to your Claude Desktop config (`~/Librar
   "mcpServers": {
     "sprout-social": {
       "command": "npx",
-      "args": ["-y", "sprout-social-mcp"],
+      "args": ["-y", "@kodowjam/sprout-social-mcp"],
       "env": {
         "SPROUT_API_TOKEN": "your_sprout_social_api_token_here",
         "SPROUT_CUSTOMER_ID": "your_customer_id_here"
@@ -53,7 +53,7 @@ No installation required! Just add this to your Claude Desktop config (`~/Librar
 For Claude Code:
 
 ```bash
-claude mcp add sprout-social -- npx -y sprout-social-mcp
+claude mcp add sprout-social -- npx -y @kodowjam/sprout-social-mcp
 ```
 
 Then set the environment variables in your shell or MCP config.
