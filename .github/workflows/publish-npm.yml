@@ -11,6 +11,9 @@
     npm-publish:
       name: Upload release to npm
       runs-on: ubuntu-latest
+      environment:
+        name: npm
+        url: https://www.npmjs.com/package/sprout-social-mcp
       steps:
         - uses: actions/checkout@v4
 
