@@ -40,6 +40,7 @@ async def create_post(
     group_id: Optional[str] = None,
     scheduled_at: Optional[str] = None,
     media_ids: Optional[list[str]] = None,
+    media_types: Optional[list[str]] = None,
     tag_ids: Optional[list[int]] = None,
 ) -> dict:
     """Create a draft social media post in Sprout Social, optionally scheduled.
@@ -51,6 +52,9 @@ async def create_post(
         scheduled_at: ISO 8601 datetime for scheduling (e.g. "2026-03-20T14:00:00Z").
             If omitted, creates an unscheduled draft.
         media_ids: List of media IDs from upload_media (must be used within 24hr of upload).
+        media_types: List of media types corresponding to media_ids. Each must be
+            "PHOTO" or "VIDEO". If omitted, defaults to "PHOTO" for all items.
+            Use the _detected_media_type from upload_media's response to set this.
         tag_ids: List of tag IDs from list_tags for organizing/categorizing the post.
 
     Note: Posts are created as drafts. Whether scheduled drafts auto-publish depends
@@ -60,6 +64,11 @@ async def create_post(
         return {"error": "profile_ids must not be empty", "status_code": 400}
     if not text or not text.strip():
         return {"error": "text must not be blank", "status_code": 400}
+    if media_types and any(mt not in ("PHOTO", "VIDEO") for mt in media_types):
+        return {
+            "error": "media_types values must be 'PHOTO' or 'VIDEO'",
+            "status_code": 400,
+        }
 
     return await client.create_post(
         profile_ids=profile_ids,
@@ -67,6 +76,7 @@ async def create_post(
         group_id=group_id,
         scheduled_at=scheduled_at,
         media_ids=media_ids,
+        media_types=media_types,
         tag_ids=tag_ids,
     )
 
@@ -86,13 +96,20 @@ async def get_post(post_id: str) -> dict:
 
 @mcp.tool()
 async def upload_media(url: str) -> dict:
-    """Upload an image or video to Sprout Social via a public URL.
+    """Upload an image or video to Sprout Social via a public URL or Google Drive link.
+
+    Supports:
+    - Direct public URLs (passed through to Sprout's API)
+    - Google Drive URLs (file is downloaded server-side and uploaded via multipart).
+      Supported formats: drive.google.com/file/d/{ID}/..., drive.google.com/open?id={ID},
+      drive.usercontent.google.com/download?id={ID}, drive.google.com/uc?export=download&id={ID}
 
     Args:
-        url: Public URL of the media file (must be < 50MB).
+        url: URL of the media file (public URL or Google Drive share link). Must be < 50MB.
+            Google Drive files must have "Anyone with the link" sharing enabled.
 
-    Returns a media_id that can be used in create_post. The media_id expires
-    24 hours after upload unless attached to a post via create_post.
+    Returns a media_id and detected media_type (PHOTO or VIDEO) that can be used
+    in create_post. The media_id expires 24 hours after upload.
     """
     return await client.upload_media(url)
 

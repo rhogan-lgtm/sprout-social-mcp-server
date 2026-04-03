@@ -68,7 +68,7 @@ server.setRequestHandler(ListToolsRequestSchema, async () => {
       {
         name: "create_post",
         description:
-          "Create a draft social media post in Sprout Social, optionally scheduled.\n\nArgs:\n  profile_ids: List of social profile IDs to post to (from list_profiles).\n  text: The post text content. Network-specific limits are validated by Sprout.\n  group_id: Group ID (from list_profiles). May be required by your account.\n  scheduled_at: ISO 8601 datetime for scheduling (e.g. \"2026-03-20T14:00:00Z\"). If omitted, creates an unscheduled draft.\n  media_ids: List of media IDs from upload_media (must be used within 24hr of upload).\n  tag_ids: List of tag IDs from list_tags for organizing/categorizing the post.\n\nNote: Posts are created as drafts. Whether scheduled drafts auto-publish depends on your Sprout account's approval workflow settings.",
+          "Create a draft social media post in Sprout Social, optionally scheduled.\n\nArgs:\n  profile_ids: List of social profile IDs to post to (from list_profiles).\n  text: The post text content. Network-specific limits are validated by Sprout.\n  group_id: Group ID (from list_profiles). May be required by your account.\n  scheduled_at: ISO 8601 datetime for scheduling (e.g. \"2026-03-20T14:00:00Z\"). If omitted, creates an unscheduled draft.\n  media_ids: List of media IDs from upload_media (must be used within 24hr of upload).\n  media_types: List of media types corresponding to media_ids (\"PHOTO\" or \"VIDEO\"). Defaults to \"PHOTO\". Use _detected_media_type from upload_media response.\n  tag_ids: List of tag IDs from list_tags for organizing/categorizing the post.\n\nNote: Posts are created as drafts. Whether scheduled drafts auto-publish depends on your Sprout account's approval workflow settings.",
         inputSchema: {
           type: "object",
           properties: {
@@ -95,6 +95,12 @@ server.setRequestHandler(ListToolsRequestSchema, async () => {
               type: "array",
               items: { type: "string" },
               description: "List of media IDs from upload_media",
+            },
+            media_types: {
+              type: "array",
+              items: { type: "string", enum: ["PHOTO", "VIDEO"] },
+              description:
+                "List of media types corresponding to media_ids (PHOTO or VIDEO). Defaults to PHOTO.",
             },
             tag_ids: {
               type: "array",
@@ -124,13 +130,14 @@ server.setRequestHandler(ListToolsRequestSchema, async () => {
       {
         name: "upload_media",
         description:
-          "Upload an image or video to Sprout Social via a public URL.\n\nArgs:\n  url: Public URL of the media file (must be < 50MB).\n\nReturns a media_id that can be used in create_post. The media_id expires 24 hours after upload unless attached to a post via create_post.",
+          "Upload an image or video to Sprout Social via a public URL or Google Drive link.\n\nSupports:\n- Direct public URLs (passed through to Sprout's API)\n- Google Drive URLs (file is downloaded server-side and uploaded via multipart)\n  Supported formats: drive.google.com/file/d/{ID}/..., drive.google.com/open?id={ID}, drive.usercontent.google.com/download?id={ID}, drive.google.com/uc?export=download&id={ID}\n\nArgs:\n  url: URL of the media file (public URL or Google Drive share link). Must be < 50MB. Google Drive files must have 'Anyone with the link' sharing enabled.\n\nReturns a media_id and detected media_type (PHOTO or VIDEO) that can be used in create_post. The media_id expires 24 hours after upload.",
         inputSchema: {
           type: "object",
           properties: {
             url: {
               type: "string",
-              description: "Public URL of the media file",
+              description:
+                "URL of the media file (public URL or Google Drive share link)",
             },
           },
           required: ["url"],
@@ -243,6 +250,7 @@ server.setRequestHandler(CallToolRequestSchema, async (request) => {
           group_id,
           scheduled_at,
           media_ids,
+          media_types,
           tag_ids,
         } = args as {
           profile_ids: string[];
@@ -250,6 +258,7 @@ server.setRequestHandler(CallToolRequestSchema, async (request) => {
           group_id?: string;
           scheduled_at?: string;
           media_ids?: string[];
+          media_types?: string[];
           tag_ids?: number[];
         };
 
@@ -281,12 +290,30 @@ server.setRequestHandler(CallToolRequestSchema, async (request) => {
           };
         }
 
+        if (
+          media_types &&
+          media_types.some((mt) => mt !== "PHOTO" && mt !== "VIDEO")
+        ) {
+          return {
+            content: [
+              {
+                type: "text",
+                text: JSON.stringify({
+                  error: "media_types values must be 'PHOTO' or 'VIDEO'",
+                  status_code: 400,
+                }),
+              },
+            ],
+          };
+        }
+
         const result = await client.createPost(
           profile_ids,
           text,
           group_id,
           scheduled_at,
           media_ids,
+          media_types,
           tag_ids
         );
         return {
