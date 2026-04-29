@@ -1,10 +1,11 @@
 """
 Sprout Social MCP Server.
 
-Exposes Sprout Social API operations as MCP tools for use in Claude Code.
-Transport: stdio
+Exposes Sprout Social API operations as MCP tools.
+Transport: HTTP/SSE for hosted deployments.
 """
 
+import os
 from typing import Optional
 
 from mcp.server.fastmcp import FastMCP
@@ -189,4 +190,11 @@ async def get_post_analytics(
 
 
 if __name__ == "__main__":
-    mcp.run(transport="stdio")
+    host = os.environ.get("HOST", "0.0.0.0")
+    port = int(os.environ.get("PORT", "8000"))
+
+    mcp.run(
+        transport="sse",
+        host=host,
+        port=port,
+    )
