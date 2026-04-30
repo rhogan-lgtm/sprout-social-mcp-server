@@ -9,22 +9,12 @@ import os
 from typing import Optional
 
 from mcp.server.fastmcp import FastMCP
+from mcp.server.transport_security import TransportSecuritySettings
 
 from sprout_client import SproutClient
 
 
-mcp = FastMCP(
-    "Sprout Social",
-    host="0.0.0.0",
-    port=int(os.environ.get("PORT", "10000")),
-    allowed_hosts=[
-        "127.0.0.1:*",
-        "localhost:*",
-        "sprout-social-mcp-server.onrender.com",
-        "sprout-social-mcp-server.onrender.com:*",
-    ],
-)
-
+mcp = FastMCP("Sprout Social")
 client = SproutClient()
 
 
@@ -62,9 +52,9 @@ async def create_post(
         profile_ids: List of social profile IDs to post to (from list_profiles).
         text: The post text content. Network-specific limits are validated by Sprout.
         group_id: Group ID (from list_profiles). May be required by your account.
-        scheduled_at: ISO 8601 datetime for scheduling (e.g. "2026-03-20T14:00:00Z").
+        scheduled_at: ISO 8601 datetime for scheduling, e.g. "2026-03-20T14:00:00Z".
             If omitted, creates an unscheduled draft.
-        media_ids: List of media IDs from upload_media (must be used within 24hr of upload).
+        media_ids: List of media IDs from upload_media. Must be used within 24hr of upload.
         media_types: List of media types corresponding to media_ids. Each must be
             "PHOTO" or "VIDEO". If omitted, defaults to "PHOTO" for all items.
             Use the _detected_media_type from upload_media's response to set this.
@@ -75,8 +65,10 @@ async def create_post(
     """
     if not profile_ids:
         return {"error": "profile_ids must not be empty", "status_code": 400}
+
     if not text or not text.strip():
         return {"error": "text must not be blank", "status_code": 400}
+
     if media_types and any(mt not in ("PHOTO", "VIDEO") for mt in media_types):
         return {
             "error": "media_types values must be 'PHOTO' or 'VIDEO'",
@@ -206,10 +198,30 @@ async def get_post_analytics(
 if __name__ == "__main__":
     import uvicorn
 
-    app = mcp.sse_app()
+    port = int(os.environ.get("PORT", "10000"))
+
+    transport_security = TransportSecuritySettings(
+        enable_dns_rebinding_protection=True,
+        allowed_hosts=[
+            "127.0.0.1:*",
+            "localhost:*",
+            "sprout-social-mcp-server.onrender.com",
+            "sprout-social-mcp-server.onrender.com:*",
+        ],
+        allowed_origins=[
+            "http://127.0.0.1:*",
+            "http://localhost:*",
+            "https://sprout-social-mcp-server.onrender.com",
+        ],
+    )
+
+    app = mcp.sse_app(
+        host="0.0.0.0",
+        transport_security=transport_security,
+    )
 
     uvicorn.run(
         app,
         host="0.0.0.0",
-        port=int(os.environ.get("PORT", "10000")),
+        port=port,
     )
