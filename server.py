@@ -8,23 +8,34 @@ Transport: HTTP/SSE for hosted deployments.
 import os
 from typing import Optional
 
-# Allow Render's public hostname through MCP's DNS rebinding / Host header protection.
-# These must be set before the SSE app is created.
-os.environ.setdefault(
-    "MCP_ALLOWED_HOSTS",
-    "127.0.0.1:*,localhost:*,sprout-social-mcp-server.onrender.com,sprout-social-mcp-server.onrender.com:*",
-)
-os.environ.setdefault(
-    "MCP_ALLOWED_ORIGINS",
-    "http://127.0.0.1:*,http://localhost:*,https://sprout-social-mcp-server.onrender.com",
-)
-
 from mcp.server.fastmcp import FastMCP
+from mcp.server.transport_security import TransportSecuritySettings
 
 from sprout_client import SproutClient
 
 
-mcp = FastMCP("Sprout Social")
+transport_security = TransportSecuritySettings(
+    enable_dns_rebinding_protection=True,
+    allowed_hosts=[
+        "127.0.0.1:*",
+        "localhost:*",
+        "sprout-social-mcp-server.onrender.com",
+        "sprout-social-mcp-server.onrender.com:*",
+    ],
+    allowed_origins=[
+        "http://127.0.0.1:*",
+        "http://localhost:*",
+        "https://sprout-social-mcp-server.onrender.com",
+    ],
+)
+
+mcp = FastMCP(
+    "Sprout Social",
+    host="0.0.0.0",
+    port=int(os.environ.get("PORT", "10000")),
+    transport_security=transport_security,
+)
+
 client = SproutClient()
 
 
@@ -59,9 +70,9 @@ async def create_post(
     """Create a draft social media post in Sprout Social, optionally scheduled.
 
     Args:
-        profile_ids: List of social profile IDs to post to (from list_profiles).
+        profile_ids: List of social profile IDs to post to, from list_profiles.
         text: The post text content. Network-specific limits are validated by Sprout.
-        group_id: Group ID (from list_profiles). May be required by your account.
+        group_id: Group ID, from list_profiles. May be required by your account.
         scheduled_at: ISO 8601 datetime for scheduling, e.g. "2026-03-20T14:00:00Z".
             If omitted, creates an unscheduled draft.
         media_ids: List of media IDs from upload_media. Must be used within 24hr of upload.
