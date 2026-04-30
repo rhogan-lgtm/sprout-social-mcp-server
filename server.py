@@ -181,20 +181,12 @@ async def get_post_analytics(
     if not profile_ids:
         return {"error": "profile_ids must not be empty", "status_code": 400}
 
-    return await client.get_post_analytics(
+        return await client.get_post_analytics(
         profile_ids=profile_ids,
         start_date=start_date,
         end_date=end_date,
         metrics=metrics,
     )
 
-
 if __name__ == "__main__":
-    host = os.environ.get("HOST", "0.0.0.0")
-    port = int(os.environ.get("PORT", "8000"))
-
-    mcp.run(
-        transport="sse",
-        host=host,
-        port=port,
-    )
+    mcp.run(transport="sse")
