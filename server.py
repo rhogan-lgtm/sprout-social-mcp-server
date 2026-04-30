@@ -216,7 +216,6 @@ if __name__ == "__main__":
     )
 
     app = mcp.sse_app(
-        host="0.0.0.0",
         transport_security=transport_security,
     )
 
