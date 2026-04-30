@@ -12,7 +12,19 @@ from mcp.server.fastmcp import FastMCP
 
 from sprout_client import SproutClient
 
-mcp = FastMCP("Sprout Social")
+
+mcp = FastMCP(
+    "Sprout Social",
+    host="0.0.0.0",
+    port=int(os.environ.get("PORT", "10000")),
+    allowed_hosts=[
+        "127.0.0.1:*",
+        "localhost:*",
+        "sprout-social-mcp-server.onrender.com",
+        "sprout-social-mcp-server.onrender.com:*",
+    ],
+)
+
 client = SproutClient()
 
 
@@ -100,16 +112,17 @@ async def upload_media(url: str) -> dict:
     """Upload an image or video to Sprout Social via a public URL or Google Drive link.
 
     Supports:
-    - Direct public URLs (passed through to Sprout's API)
-    - Google Drive URLs (file is downloaded server-side and uploaded via multipart).
+    - Direct public URLs passed through to Sprout's API.
+    - Google Drive URLs downloaded server-side and uploaded via multipart.
       Supported formats: drive.google.com/file/d/{ID}/..., drive.google.com/open?id={ID},
       drive.usercontent.google.com/download?id={ID}, drive.google.com/uc?export=download&id={ID}
 
     Args:
-        url: URL of the media file (public URL or Google Drive share link). Must be < 50MB.
-            Google Drive files must have "Anyone with the link" sharing enabled.
+        url: URL of the media file, either public URL or Google Drive share link.
+            Must be less than 50MB. Google Drive files must have "Anyone with the link"
+            sharing enabled.
 
-    Returns a media_id and detected media_type (PHOTO or VIDEO) that can be used
+    Returns a media_id and detected media_type, PHOTO or VIDEO, that can be used
     in create_post. The media_id expires 24 hours after upload.
     """
     return await client.upload_media(url)
@@ -144,7 +157,7 @@ async def get_profile_analytics(
         profile_ids: List of profile IDs to get analytics for.
         start_date: Start date in YYYY-MM-DD format.
         end_date: End date in YYYY-MM-DD format.
-        metrics: List of metric names (e.g. ["impressions", "engagements", "followers"]).
+        metrics: List of metric names, e.g. ["impressions", "engagements", "followers"].
     """
     if not profile_ids:
         return {"error": "profile_ids must not be empty", "status_code": 400}
@@ -166,8 +179,8 @@ async def get_post_analytics(
 ) -> dict:
     """Get per-post performance metrics over a date range.
 
-    Returns individual post data (text, link, author) with lifetime metrics.
-    Automatically fetches all pages (50 posts/page) and returns combined results.
+    Returns individual post data with lifetime metrics. Automatically fetches all
+    pages, 50 posts per page, and returns combined results.
 
     Args:
         profile_ids: List of profile IDs to get post analytics for.
@@ -176,17 +189,19 @@ async def get_post_analytics(
         metrics: List of lifetime-prefixed metric names. Defaults to:
             lifetime.impressions, lifetime.engagements, lifetime.post_link_clicks,
             lifetime.post_shares_count, lifetime.likes, lifetime.comments_count.
-            Not all metrics are available on all networks (e.g. YouTube may lack impressions).
+            Not all metrics are available on all networks, for example YouTube may
+            lack impressions.
     """
     if not profile_ids:
         return {"error": "profile_ids must not be empty", "status_code": 400}
 
-        return await client.get_post_analytics(
+    return await client.get_post_analytics(
         profile_ids=profile_ids,
         start_date=start_date,
         end_date=end_date,
         metrics=metrics,
     )
+
 
 if __name__ == "__main__":
     import uvicorn
