@@ -8,8 +8,18 @@ Transport: HTTP/SSE for hosted deployments.
 import os
 from typing import Optional
 
+# Allow Render's public hostname through MCP's DNS rebinding / Host header protection.
+# These must be set before the SSE app is created.
+os.environ.setdefault(
+    "MCP_ALLOWED_HOSTS",
+    "127.0.0.1:*,localhost:*,sprout-social-mcp-server.onrender.com,sprout-social-mcp-server.onrender.com:*",
+)
+os.environ.setdefault(
+    "MCP_ALLOWED_ORIGINS",
+    "http://127.0.0.1:*,http://localhost:*,https://sprout-social-mcp-server.onrender.com",
+)
+
 from mcp.server.fastmcp import FastMCP
-from mcp.server.transport_security import TransportSecuritySettings
 
 from sprout_client import SproutClient
 
@@ -198,29 +208,10 @@ async def get_post_analytics(
 if __name__ == "__main__":
     import uvicorn
 
-    port = int(os.environ.get("PORT", "10000"))
-
-    transport_security = TransportSecuritySettings(
-        enable_dns_rebinding_protection=True,
-        allowed_hosts=[
-            "127.0.0.1:*",
-            "localhost:*",
-            "sprout-social-mcp-server.onrender.com",
-            "sprout-social-mcp-server.onrender.com:*",
-        ],
-        allowed_origins=[
-            "http://127.0.0.1:*",
-            "http://localhost:*",
-            "https://sprout-social-mcp-server.onrender.com",
-        ],
-    )
-
-    app = mcp.sse_app(
-        transport_security=transport_security,
-    )
+    app = mcp.sse_app()
 
     uvicorn.run(
         app,
         host="0.0.0.0",
-        port=port,
+        port=int(os.environ.get("PORT", "10000")),
     )
